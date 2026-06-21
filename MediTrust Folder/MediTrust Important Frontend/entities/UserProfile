@@ -1,0 +1,64 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "patient",
+        "doctor",
+        "pharmacy"
+      ]
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "hi",
+        "te",
+        "ta"
+      ],
+      "default": "en"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ]
+    },
+    "blood_group": {
+      "type": "string"
+    },
+    "allergies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "medical_history": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "email",
+    "user_type"
+  ]
+}

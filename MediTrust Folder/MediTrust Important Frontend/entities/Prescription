@@ -1,0 +1,71 @@
+{
+  "name": "Prescription",
+  "type": "object",
+  "properties": {
+    "patient_email": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_email": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_specialization": {
+      "type": "string"
+    },
+    "doctor_license": {
+      "type": "string"
+    },
+    "appointment_id": {
+      "type": "string"
+    },
+    "diagnosis": {
+      "type": "string"
+    },
+    "medicines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "additional_notes": {
+      "type": "string"
+    },
+    "pharmacy_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "ready",
+        "delivered"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "patient_email",
+    "doctor_email",
+    "medicines"
+  ]
+}
