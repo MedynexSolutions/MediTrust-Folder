@@ -1,0 +1,71 @@
+{
+  "name": "HealthLog",
+  "type": "object",
+  "properties": {
+    "patient_email": {
+      "type": "string"
+    },
+    "log_type": {
+      "type": "string",
+      "enum": [
+        "symptom",
+        "medicine",
+        "note",
+        "visit_summary"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "mild",
+        "moderate",
+        "severe"
+      ],
+      "description": "Only for symptom logs"
+    },
+    "medicine_name": {
+      "type": "string"
+    },
+    "medicine_dose": {
+      "type": "string"
+    },
+    "medicine_taken": {
+      "type": "boolean",
+      "default": false
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded file URL"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": [
+        "prescription",
+        "lab_report",
+        "other"
+      ]
+    },
+    "reminder_time": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_email",
+    "log_type",
+    "title",
+    "date"
+  ]
+}
