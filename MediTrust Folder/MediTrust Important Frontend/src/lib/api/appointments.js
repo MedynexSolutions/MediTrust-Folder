@@ -1,10 +1,11 @@
 import { supabase } from '../supabase';
+import backendAPI from './backend.js';
 
 function mapAppointment(row) {
   return {
     ...row,
-    date: row.appointment_date,
-    created_date: row.created_at,
+    date: row.appointment_date || row.date,
+    created_date: row.created_at || row.created_date,
   };
 }
 
@@ -48,30 +49,38 @@ export async function listAppointmentsByDoctorAndDate(doctorId, appointmentDate)
 }
 
 export async function createAppointment(payload) {
-  const { data, error } = await supabase
-    .from('appointments')
-    .insert({
-      patient_id: payload.patient_id,
-      patient_email: payload.patient_email,
-      patient_name: payload.patient_name,
-      doctor_id: payload.doctor_id,
-      doctor_email: payload.doctor_email,
-      doctor_name: payload.doctor_name,
-      specialization: payload.specialization,
-      appointment_type: payload.appointment_type,
-      appointment_date: payload.appointment_date,
-      time_slot: payload.time_slot,
-      status: payload.status || 'pending',
-      fee: payload.fee,
-      notes: payload.notes,
-      hospital_name: payload.hospital_name,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  try {
+    // Try backend API first
+    const data = await backendAPI.bookAppointment(payload);
+    return mapAppointment(data);
+  } catch (error) {
+    console.warn('Backend API failed, falling back to Supabase:', error);
+    // Fallback to Supabase
+    const { data, error: supabaseError } = await supabase
+      .from('appointments')
+      .insert({
+        patient_id: payload.patient_id,
+        patient_email: payload.patient_email,
+        patient_name: payload.patient_name,
+        doctor_id: payload.doctor_id,
+        doctor_email: payload.doctor_email,
+        doctor_name: payload.doctor_name,
+        specialization: payload.specialization,
+        appointment_type: payload.appointment_type,
+        appointment_date: payload.appointment_date,
+        time_slot: payload.time_slot,
+        status: payload.status || 'pending',
+        fee: payload.fee,
+        notes: payload.notes,
+        hospital_name: payload.hospital_name,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return mapAppointment(data);
+    if (supabaseError) throw supabaseError;
+    return mapAppointment(data);
+  }
 }
 
 export async function updateAppointment(appointmentId, updates) {

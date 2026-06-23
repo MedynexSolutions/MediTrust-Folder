@@ -1,9 +1,10 @@
 import { supabase } from '../supabase';
+import backendAPI from './backend.js';
 
 function mapLog(row) {
   return {
     ...row,
-    date: row.log_date,
+    date: row.log_date || row.date,
   };
 }
 
@@ -25,29 +26,37 @@ export async function listHealthLogsByPatientEmail(patientEmail) {
 }
 
 export async function createHealthLog(payload) {
-  const { data, error } = await supabase
-    .from('health_logs')
-    .insert({
-      patient_id: payload.patient_id,
-      patient_email: payload.patient_email,
-      log_type: payload.log_type,
-      title: payload.title,
-      description: payload.description,
-      log_date: payload.log_date || payload.date,
-      severity: payload.severity,
-      medicine_name: payload.medicine_name,
-      medicine_dose: payload.medicine_dose,
-      medicine_taken: payload.medicine_taken,
-      doctor_name: payload.doctor_name,
-      reminder_time: payload.reminder_time,
-      file_url: payload.file_url || '',
-      file_type: payload.file_type,
-    })
-    .select()
-    .single();
+  try {
+    // Try backend API first
+    const data = await backendAPI.createHealthRecord(payload);
+    return mapLog(data);
+  } catch (error) {
+    console.warn('Backend API failed, falling back to Supabase:', error);
+    // Fallback to Supabase
+    const { data, error: supabaseError } = await supabase
+      .from('health_logs')
+      .insert({
+        patient_id: payload.patient_id,
+        patient_email: payload.patient_email,
+        log_type: payload.log_type,
+        title: payload.title,
+        description: payload.description,
+        log_date: payload.log_date || payload.date,
+        severity: payload.severity,
+        medicine_name: payload.medicine_name,
+        medicine_dose: payload.medicine_dose,
+        medicine_taken: payload.medicine_taken,
+        doctor_name: payload.doctor_name,
+        reminder_time: payload.reminder_time,
+        file_url: payload.file_url || '',
+        file_type: payload.file_type,
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return mapLog(data);
+    if (supabaseError) throw supabaseError;
+    return mapLog(data);
+  }
 }
 
 export async function updateHealthLog(logId, updates) {

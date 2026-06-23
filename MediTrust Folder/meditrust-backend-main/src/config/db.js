@@ -2,17 +2,23 @@ import "./env.js";
 import { supabase } from "./supabase.js";
 
 export const connectDB = async () => {
-  const { error } = await supabase
-    .from("users")
-    .select("id")
-    .limit(1);
+  try {
+    // Test connection by checking if we can access the database
+    const { error } = await supabase
+      .from("users")
+      .select("id")
+      .limit(1);
 
-  if (error) {
+    if (error) {
+      console.warn(`Supabase Connection Warning: ${error.message}`);
+      console.warn("Tables may not exist yet. Run SUPABASE_SCHEMA.sql to create them.");
+      return;
+    }
+
+    console.log("Supabase Connected Successfully");
+  } catch (error) {
     console.error(`Supabase Connection Error: ${error.message}`);
-    return;
   }
-
-  console.log("Supabase Connected");
 };
 
 export default connectDB;

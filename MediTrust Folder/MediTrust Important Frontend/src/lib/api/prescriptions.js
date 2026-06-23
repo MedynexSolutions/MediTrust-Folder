@@ -1,9 +1,10 @@
 import { supabase } from '../supabase';
+import backendAPI from './backend.js';
 
 function mapPrescription(row) {
   return {
     ...row,
-    created_date: row.created_at,
+    created_date: row.created_at || row.created_date,
     medicines: row.medicines || [],
   };
 }
@@ -47,30 +48,38 @@ export async function listPrescriptionsByDoctorId(doctorId) {
 }
 
 export async function createPrescription(payload) {
-  const { data, error } = await supabase
-    .from('prescriptions')
-    .insert({
-      patient_id: payload.patient_id,
-      patient_email: payload.patient_email,
-      patient_name: payload.patient_name,
-      patient_phone: payload.patient_phone,
-      doctor_id: payload.doctor_id,
-      doctor_email: payload.doctor_email,
-      doctor_name: payload.doctor_name,
-      doctor_specialization: payload.doctor_specialization,
-      doctor_license: payload.doctor_license,
-      diagnosis: payload.diagnosis,
-      medicines: payload.medicines,
-      additional_notes: payload.additional_notes,
-      pharmacy_status: payload.pharmacy_status || 'pending',
-      delivery_address: payload.delivery_address,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  try {
+    // Try backend API first
+    const data = await backendAPI.createPrescription(payload);
+    return mapPrescription(data);
+  } catch (error) {
+    console.warn('Backend API failed, falling back to Supabase:', error);
+    // Fallback to Supabase
+    const { data, error: supabaseError } = await supabase
+      .from('prescriptions')
+      .insert({
+        patient_id: payload.patient_id,
+        patient_email: payload.patient_email,
+        patient_name: payload.patient_name,
+        patient_phone: payload.patient_phone,
+        doctor_id: payload.doctor_id,
+        doctor_email: payload.doctor_email,
+        doctor_name: payload.doctor_name,
+        doctor_specialization: payload.doctor_specialization,
+        doctor_license: payload.doctor_license,
+        diagnosis: payload.diagnosis,
+        medicines: payload.medicines,
+        additional_notes: payload.additional_notes,
+        pharmacy_status: payload.pharmacy_status || 'pending',
+        delivery_address: payload.delivery_address,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return mapPrescription(data);
+    if (supabaseError) throw supabaseError;
+    return mapPrescription(data);
+  }
 }
 
 export async function updatePrescription(prescriptionId, updates) {

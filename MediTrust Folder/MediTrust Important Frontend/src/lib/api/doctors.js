@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import backendAPI from './backend.js';
 
 const DEFAULT_SLOTS = [
   '09:00 AM', '09:15 AM', '09:30 AM', '09:45 AM',
@@ -28,7 +29,7 @@ export function mapDoctorProfile(row) {
 
   return {
     id: row.id,
-    name: row.full_name || 'Doctor',
+    name: row.full_name || row.name || 'Doctor',
     specialization: row.specialization || 'general_physician',
     specialization_label: SPEC_LABELS[row.specialization] || row.specialization,
     qualification: row.qualification || '',
@@ -42,7 +43,7 @@ export function mapDoctorProfile(row) {
     is_verified: Boolean(row.is_verified),
     consultation_fees: fees,
     languages: row.languages || ['English'],
-    profile_image: row.profile_image || null,
+    profile_image: row.profile_image || row.profileImage || null,
     slot_duration_minutes: row.slot_duration_minutes || 15,
     max_patients_per_slot: row.max_patients_per_slot || 2,
     walkin_reserve_percent: row.walkin_reserve_percent || 30,
@@ -54,14 +55,22 @@ export function mapDoctorProfile(row) {
 }
 
 export async function listPublicDoctors() {
-  const { data, error } = await supabase
-    .from('doctor_profiles')
-    .select('*')
-    .eq('setup_complete', true)
-    .order('full_name');
+  try {
+    // Try backend API first
+    const data = await backendAPI.getDoctors();
+    return (data || []).map(mapDoctorProfile);
+  } catch (error) {
+    console.warn('Backend API failed, falling back to Supabase:', error);
+    // Fallback to Supabase
+    const { data, error: supabaseError } = await supabase
+      .from('doctor_profiles')
+      .select('*')
+      .eq('setup_complete', true)
+      .order('full_name');
 
-  if (error) throw error;
-  return (data || []).map(mapDoctorProfile);
+    if (supabaseError) throw supabaseError;
+    return (data || []).map(mapDoctorProfile);
+  }
 }
 
 export async function getDoctorById(doctorId) {

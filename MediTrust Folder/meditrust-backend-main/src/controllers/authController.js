@@ -1,4 +1,3 @@
-import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../config/supabase.js';
 
@@ -11,11 +10,12 @@ const generateToken = (userId) => {
 };
 
 const formatUser = (user) => ({
-  id: user._id,
-  name: user.name,
+  id: user.id,
+  _id: user.id,
+  name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
   email: user.email,
-  role: user.role,
-  profileImage: user.profileImage || ''
+  role: user.user_metadata?.role || 'patient',
+  profileImage: user.user_metadata?.avatar_url || user.user_metadata?.profile_image || ''
 });
 
 // Register
@@ -30,29 +30,39 @@ export const register = async (req, res) => {
       });
     }
 
-    const userExists = await User.findOne({
-      email: email.toLowerCase()
+    // Use Supabase Auth for registration
+    const { data, error } = await supabase.auth.signUp({
+      email: email.toLowerCase(),
+      password,
+      options: {
+        data: {
+          full_name: name,
+          role: role || 'patient',
+          profile_image: profileImage || ''
+        },
+        emailRedirectTo: undefined // Disable email confirmation for testing
+      }
     });
 
-    if (userExists) {
+    if (error) {
+      console.error('Supabase registration error:', error);
       return res.status(400).json({
         success: false,
-        message: 'User already exists'
+        message: error.message
       });
     }
 
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password,
-      role: role || 'patient',
-      profileImage: profileImage || ''
-    });
+    if (!data.user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration failed'
+      });
+    }
 
     res.status(201).json({
       success: true,
-      token: generateToken(user._id),
-      user: formatUser(user)
+      token: data.session?.access_token || generateToken(data.user.id),
+      user: formatUser(data.user)
     });
   } catch (error) {
     console.error('Registration error:', error.message);
@@ -75,20 +85,21 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      email: email.toLowerCase()
+    // Use Supabase Auth for login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase(),
+      password
     });
 
-    if (!user) {
+    if (error) {
+      console.error('Supabase login error:', error);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
+    if (!data.user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -97,8 +108,8 @@ export const login = async (req, res) => {
 
     res.json({
       success: true,
-      token: generateToken(user._id),
-      user: formatUser(user)
+      token: data.session.access_token,
+      user: formatUser(data.user)
     });
   } catch (error) {
     console.error('Login error:', error.message);
@@ -131,34 +142,17 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    const email = data.user.email?.toLowerCase();
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Supabase user has no email'
-      });
-    }
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({
-        name:
-          data.user.user_metadata?.full_name ||
-          data.user.user_metadata?.name ||
-          email.split('@')[0],
-        email,
-        password: Math.random().toString(36).substring(2, 15),
-        role: role || 'patient',
-        profileImage: data.user.user_metadata?.avatar_url || ''
+    // Update user metadata with role if provided
+    if (role) {
+      await supabase.auth.updateUser({
+        data: { role }
       });
     }
 
     res.json({
       success: true,
-      token: generateToken(user._id),
-      user: formatUser(user)
+      token: token,
+      user: formatUser(data.user)
     });
   } catch (error) {
     console.error('Google login error:', error.message);
@@ -172,11 +166,30 @@ export const googleLogin = async (req, res) => {
 // Current User
 export const getMe = async (req, res) => {
   try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+
     res.json({
       success: true,
-      user: req.user
+      user: formatUser(data.user)
     });
   } catch (error) {
+    console.error('Get user error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message
