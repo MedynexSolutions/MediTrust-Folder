@@ -29,7 +29,7 @@ export const createPrescription = async (req, res) => {
       return res.status(500).json({ success: false, message: error.message });
     }
 
-    res.json(data);
+    res.json({ success: true, data });
   } catch (error) {
     console.error('Server error in createPrescription:', error);
     res.status(500).json({ success: false, message: error.message });

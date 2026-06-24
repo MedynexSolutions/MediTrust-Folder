@@ -29,6 +29,9 @@ export const getDoctors = async (req, res) => {
       rating: Number(doc.rating) || 4.5,
       is_verified: Boolean(doc.is_verified),
       profile_image: doc.profile_image || null,
+      consultation_fees: doc.consultation_fees || {},
+      languages: doc.languages || ['English'],
+      available_slots: doc.available_slots || [],
     }));
 
     res.json(doctors);
