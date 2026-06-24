@@ -1,0 +1,95 @@
+{
+  "name": "MedicinePreOrder",
+  "type": "object",
+  "properties": {
+    "patient_email": {
+      "type": "string",
+      "description": "Email of the patient"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_phone": {
+      "type": "string"
+    },
+    "pharmacy_name": {
+      "type": "string"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "pickup",
+        "delivery"
+      ],
+      "description": "Pickup or delivery"
+    },
+    "preferred_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "preferred_time_slot": {
+      "type": "string"
+    },
+    "medicines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "medicine_id": {
+            "type": "string"
+          },
+          "medicine_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          },
+          "stock_status": {
+            "type": "string",
+            "enum": [
+              "in_stock",
+              "will_arrive_soon",
+              "out_of_stock"
+            ]
+          }
+        }
+      }
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "delivery_address": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "preparing",
+        "ready",
+        "out_for_delivery",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "pharmacy_notes": {
+      "type": "string"
+    },
+    "suggested_time_slot": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_email",
+    "order_type",
+    "preferred_date",
+    "preferred_time_slot",
+    "medicines",
+    "total_amount"
+  ]
+}
